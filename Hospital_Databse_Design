@@ -1,0 +1,341 @@
+create database Hospital_db ;
+use Hospital_db;
+
+-- create table Department
+
+create table Department(
+department_id int auto_increment primary key,
+department_name varchar(50) not null
+);
+
+-- create table Doctors
+
+create table Doctors(
+doctor_id int auto_increment primary key,
+name varchar(50),
+specialization varchar(50),
+role varchar(50),
+department_id int ,
+foreign key (department_id) references Department(department_id)
+);
+
+-- create table Patients
+
+create table patients(
+patient_id int auto_increment primary key,
+name varchar(50),
+DOB date,
+gender varchar(1),
+phone varchar(15),
+check(gender in("M","F","O"))
+);
+
+-- Create table Aapointment
+
+create table aapointment(
+aapointment_id int auto_increment primary key,
+patient_id int,
+doctor_id int,
+appointment_time datetime default current_timestamp,
+status varchar(50),
+foreign key (patient_id) references patients (patient_id),
+foreign key (doctor_id) references doctors (doctor_id),
+check(status in("Scheduled","Completed","Cancelled"))
+);
+
+-- create Prescriptions
+create table Prescriptions(
+Prescriptions_id int auto_increment primary key,
+aapointment_id int,
+medication varchar(100),
+dosage varchar(50),
+foreign key (aapointment_id) references aapointment(aapointment_id)
+
+);
+
+-- create table Bills
+
+create table bills(
+bill_id int auto_increment primary key,
+aapointment_id int,
+amount decimal(10,2),
+paid tinyint(1),
+bill_date datetime default current_timestamp,
+foreign key (aapointment_id) references aapointment(aapointment_id)
+);
+
+-- create table labreport
+
+create table labreport(
+report_id int auto_increment primary key,
+aapointment_id int,
+report_data text,
+create_date datetime default current_timestamp,
+foreign key (aapointment_id) references aapointment(aapointment_id)
+
+);
+
+
+-- insertion of database
+
+select * from hospital_data;
+
+select `Departments.DepartmentID` from hospital_data;
+
+-- insertion values in Department
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where 
+table_schema = 'hospital_db'
+and table_name='hospital_data'
+and column_name like '%Departments.%';
+
+insert into department(department_id,department_name)
+select `Departments.DepartmentID`,`Departments.Name` from hospital_data
+where `Departments.DepartmentID`<>'';
+
+select * from department;
+
+-- insertion values in Doctors-----
+
+select * from doctors;
+
+select concat('select', group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where table_schema = 'hospital_db'
+and table_name = 'hospital_data'
+and column_name like '%Doctors%';
+
+insert into doctors(doctor_id,name,specialization,role,department_id)
+select`Doctors.DoctorID`,`Doctors.Name`,`Doctors.Specialization`,
+`Doctors.Role`,`Doctors.DepartmentID`from hospital_data 
+where `Doctors.DepartmentID`<>'';
+
+-- insertion values in Patients table-----
+
+select * from patients;
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where table_schema ='hospital_db'
+and table_name = 'hospital_data'
+and column_name like '%Patients%';
+
+insert into patients(patient_id,name,DOB,gender,phone)
+select `Patients.PatientID`,
+`Patients.Name`,
+STR_TO_DATE(`Patients.DateOfBirth`, '%d-%m-%Y'),
+`Patients.Gender`
+,`Patients.Phone`
+from hospital_data
+where `Patients.PatientID`<> '';
+
+-- insertion values in`aapointment` table-----
+
+select * from aapointment;
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_dada')
+from information_schema.columns
+where table_schema= 'hospital_db'
+and table_name ='hospital_data'
+and column_name like '%Appointments%';
+
+insert into aapointment(aapointment_id,patient_id,doctor_id,appointment_time,status)
+select `Appointments.AppointmentID`,
+`Appointments.PatientID`,
+`Appointments.DoctorID`,
+str_to_date(`Appointments.AppointmentTime`,'%d-%m-%Y %H:%i'),
+`Appointments.Status`
+ from hospital_data;
+
+-- insertion values in `prescriptions` table-----
+select * from prescriptions;
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where table_schema = 'hospital_db'
+and table_name = 'hospital_data'
+and column_name like 'Prescriptions';
+
+insert into prescriptions(Prescriptions_id,aapointment_id,medication,dosage)
+select `Prescriptions.PrescriptionID`,
+`Prescriptions.AppointmentID`,
+`Prescriptions.Medication`,
+`Prescriptions.Dosage`
+from hospital_data
+where `Prescriptions.PrescriptionID` <> '';
+
+-- insertion values in Bills table-----
+select * from bills;
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where table_schema = 'hospital_db'
+and table_name = 'hospital_data'
+and column_name like 'bills';
+
+insert into bills(bill_id,aapointment_id,amount,paid,bill_date)
+select `Bills.BillID`,
+`Bills.AppointmentID`,
+`Bills.Amount`,
+`Bills.Paid`,
+`Bills.BillDate`
+-- str_to_date(`Bills.BillDate`,'%d-%m-%Y %H:%i')
+from hospital_data
+where `Bills.BillID` <> '';
+
+select * from labreport;
+
+select concat('select',group_concat(concat('`',column_name,'`')),'from hospital_data')
+from information_schema.columns
+where table_schema = 'hospital_db'
+and table_name = 'hospital_data'
+and column_name like 'LabReports';
+
+insert into labreport(report_id,aapointment_id,report_data,create_date)
+select `LabReports.ReportID`,
+`LabReports.AppointmentID`,
+`LabReports.ReportData`,
+`LabReports.CreatedAt`
+from hospital_data
+where `LabReports.ReportID` <> '';
+
+
+
+
+
+-- point 4
+drop trigger check_new_appointment;
+
+delimiter $$
+create trigger check_new_appointment
+before insert on Aapointment
+for each row 
+begin
+
+	if new.appointment_time < now() then
+		signal sqlstate '45000'
+		set message_text = 'Error: Appointment cannot be in the past';
+    end if;
+    
+    if exists
+    (
+		select * from aapointment
+		where doctor_id = new.doctor_id and
+		appointment_time = new.appointment_time and
+        status in('Scheduled')
+    )
+		then
+		signal sqlstate '45000'
+		set message_text = 'Error: Doctor has alredy an appointment at this time';
+        
+    end if;
+end $$
+delimiter ;
+
+insert into aapointment(aapointment_id,patient_id,doctor_id,appointment_time,status) values
+(10000,1,1,'2026-06-25 10:00:00','scheduled');
+
+insert into aapointment(aapointment_id,patient_id,doctor_id,appointment_time,status) values
+(10001,1,1,'2026-06-25 10:00:00','scheduled');
+
+
+-- point 5
+
+delimiter $$
+create procedure view_doctor_data(in input_username varchar(55), in input_password varchar(50))
+begin
+	declare doc_role varchar(50);
+    declare doc_dept int;
+    declare doc_id int;
+    
+    select doctor_id into doc_id
+    from doctor_credentials
+    where user_name = input_username and password = input_password;
+    
+    -- Get role and department from department
+    
+    select role,department_id
+    into doc_role,doc_dept
+    from doctors where doctor_id = doc_id;
+    
+    -- show patients data
+    
+    if doc_role = 'senior' then
+		select d.doctor_id,p.patient_id,p.name,p.gender,
+		a.appointment_time,pr.medication,lr.report_data
+		from patients as p
+		join 
+		aapointment as a on p.patient_id = a.patient_id
+        join
+        doctors as d on a.doctor_id = d.doctor_id
+		join
+		prescriptions as pr on a.aapointment_id = pr.aapointment_id
+		join
+		labreport as lr on a.aapointment_id = lr.aapointment_id
+        where d.department_id = doc_dept;
+	else
+		select a.doctor_id, p.patient_id,p.name,p.gender,
+		a.appointment_time,pr.medication,lr.report_data
+		from patients as p
+		join 
+		aapointment as a on p.patient_id = a.patient_id
+		join
+		prescriptions as pr on a.aapointment_id = pr.aapointment_id
+		join
+		labreport as lr on a.aapointment_id = lr.aapointment_id
+        where a.doctor_id = doc_id;
+    
+   end if;
+
+
+end $$
+delimiter ;
+
+call view_doctor_data('doctor1','W3jzIANG');
+call view_doctor_data('doctor4','ic0pFSn0');
+
+-- point 6
+
+delimiter //
+create procedure revenue_by_month(in p_year int, in p_month int)
+begin
+		select d1.department_name as department,
+        sum(amount) as Total_Revenue
+        from bills as b
+        join 
+        aapointment a on b.aapointment_id = a.aapointment_id
+        join
+        doctors as d on a.doctor_id = d.doctor_id
+        join
+        department as d1 on d1.department_id = d.doctor_id
+        where month(b.bill_date)=p_month and year(b.bill_date)= p_year
+        group by d1.department_name;
+
+
+
+end //
+delimiter ;
+
+ call revenue_by_month(2025,6);
+ call revenue_by_month(2024,6);
+ call revenue_by_month(2025,5);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
